@@ -1,13 +1,14 @@
 {
   "name": "telegram-forward-bot",
   "version": "1.0.0",
-  "description": "A Telegram bot that receives messages and forwards them to a specific user.",
-  "main": "server.js",
+  "description": "Телеграм-бот, пересылающий сообщения по вебхуку",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "node-telegram-bot-api": "^0.61.0"
   }
 }
