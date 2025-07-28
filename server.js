@@ -6,22 +6,24 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const TO_USER_ID = process.env.TO_USER_ID;
+const BASE_URL = process.env.RENDER_EXTERNAL_URL;
 
-if (!process.env.BOT_TOKEN || !process.env.TO_USER_ID || !process.env.RENDER_EXTERNAL_URL) {
-  console.error('❌ Одна из переменных окружения не настроена: BOT_TOKEN, TO_USER_ID или RENDER_EXTERNAL_URL');
+if (!BOT_TOKEN || !TO_USER_ID || !BASE_URL) {
+  console.error('❌ Отсутствует одна из переменных окружения: BOT_TOKEN, TO_USER_ID, RENDER_EXTERNAL_URL');
   process.exit(1);
 }
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, {
-  webHook: { port: PORT }
-});
+// Создаем бота в режиме "no polling", используем внешний webhook
+const bot = new TelegramBot(BOT_TOKEN, { webHook: true });
 
-const WEBHOOK_PATH = `/bot${process.env.BOT_TOKEN}`;
-const WEBHOOK_URL = `${process.env.RENDER_EXTERNAL_URL}${WEBHOOK_PATH}`;
+const WEBHOOK_PATH = `/bot${BOT_TOKEN}`;
+const WEBHOOK_URL = `${BASE_URL}${WEBHOOK_PATH}`;
 
 bot.setWebHook(WEBHOOK_URL)
   .then(() => console.log(`✅ Webhook установлен: ${WEBHOOK_URL}`))
-  .catch(err => console.error('❌ Ошибка установки webhook:', err));
+  .catch(err => console.error('❌ Ошибка установки Webhook:', err.message));
 
 app.post(WEBHOOK_PATH, (req, res) => {
   bot.processUpdate(req.body);
@@ -30,10 +32,10 @@ app.post(WEBHOOK_PATH, (req, res) => {
 
 bot.on('message', async msg => {
   try {
-    await bot.forwardMessage(process.env.TO_USER_ID, msg.chat.id, msg.message_id);
-    console.log(`→ Переслано сообщение от ${msg.chat.id}`);
+    await bot.forwardMessage(TO_USER_ID, msg.chat.id, msg.message_id);
+    console.log(`📩 Переслано сообщение от ${msg.chat.id}`);
   } catch (err) {
-    console.error('❌ Ошибка при пересылке:', err.message);
+    console.error('❌ Ошибка при пересылке сообщения:', err.message);
   }
 });
 
