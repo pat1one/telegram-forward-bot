@@ -5,37 +5,39 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, {
-  webHook: {
-    port: process.env.PORT || 3000
-  }
-});
+const PORT = process.env.PORT || 3000;
+const bot = new TelegramBot(process.env.BOT_TOKEN, { webHook: { port: PORT } });
 
-const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/bot${process.env.BOT_TOKEN}`;
-bot.setWebHook(webhookUrl);
+// Проверим, что все переменные заданы
+if (!process.env.BOT_TOKEN || !process.env.TO_USER_ID || !process.env.RENDER_EXTERNAL_URL) {
+  throw new Error('Одна или несколько переменных окружения не заданы');
+}
 
-app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
+// Вебхук Telegram
+const WEBHOOK_PATH = `/bot${process.env.BOT_TOKEN}`;
+const WEBHOOK_URL = `${process.env.RENDER_EXTERNAL_URL}${WEBHOOK_PATH}`;
+
+bot.setWebHook(WEBHOOK_URL)
+  .then(() => console.log(`✅ Webhook установлен: ${WEBHOOK_URL}`))
+  .catch((err) => console.error('❌ Ошибка установки webhook:', err.message));
+
+// Обработка входящих обновлений от Telegram
+app.post(WEBHOOK_PATH, (req, res) => {
   bot.processUpdate(req.body);
   res.sendStatus(200);
 });
 
+// Пересылка сообщений
 bot.on('message', async (msg) => {
-  const fromId = msg.chat.id;
-  const toId = process.env.TO_USER_ID;
-
-  if (toId) {
-    try {
-      await bot.forwardMessage(toId, fromId, msg.message_id);
-      console.log(`Сообщение от ${fromId} переслано`);
-    } catch (error) {
-      console.error('Ошибка пересылки:', error.message);
-    }
+  try {
+    await bot.forwardMessage(process.env.TO_USER_ID, msg.chat.id, msg.message_id);
+    console.log(`Переслано сообщение от ${msg.chat.id}`);
+  } catch (err) {
+    console.error('Ошибка при пересылке:', err.message);
   }
 });
 
-const PORT = process.env.PORT || 3000;
+// Запуск сервера
 app.listen(PORT, () => {
   console.log(`🚀 Сервер запущен на порту ${PORT}`);
-  console.log(`🌐 Вебхук установлен: ${webhookUrl}`);
 });
-
