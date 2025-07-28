@@ -15,7 +15,7 @@ if (!BOT_TOKEN || !TO_USER_ID || !BASE_URL) {
   process.exit(1);
 }
 
-// Создаем бота в режиме "no polling", используем внешний webhook
+
 const bot = new TelegramBot(BOT_TOKEN, { webHook: true });
 
 const WEBHOOK_PATH = `/bot${BOT_TOKEN}`;
