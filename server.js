@@ -40,9 +40,6 @@ bot.on('message', async msg => {
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('🤖 Telegram бот работает! Webhook настроен.');
-});
 
 app.listen(PORT, () => {
   console.log(`🚀 Сервер запущен на порту ${PORT}`);
