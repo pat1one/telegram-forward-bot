@@ -1,37 +1,41 @@
-require('dotenv').config();
-const fs = require('fs');
+const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
+require('dotenv').config();
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
-const FORWARD_TO = process.env.TO_USER_ID;
+const app = express();
+app.use(express.json());
 
-const saveMessage = (msg) => {
-  const filePath = './messages.json';
-  const messages = fs.existsSync(filePath)
-    ? JSON.parse(fs.readFileSync(filePath, 'utf8'))
-    : [];
-
-  messages.push({
-    date: new Date().toISOString(),
-    from: msg.from.username || msg.from.id,
-    type: msg.text ? 'text' : 'non-text',
-    content: msg.text || '[media]',
-  });
-
-  fs.writeFileSync(filePath, JSON.stringify(messages, null, 2));
-};
-
-
-bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-
-
-  saveMessage(msg);
-
-
-  try {
-    await bot.forwardMessage(FORWARD_TO, chatId, msg.message_id);
-  } catch (error) {
-    console.error('Ошибка пересылки:', error);
+const bot = new TelegramBot(process.env.BOT_TOKEN, {
+  webHook: {
+    port: process.env.PORT || 3000
   }
 });
+
+const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/bot${process.env.BOT_TOKEN}`;
+bot.setWebHook(webhookUrl);
+
+app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
+
+bot.on('message', async (msg) => {
+  const fromId = msg.chat.id;
+  const toId = process.env.TO_USER_ID;
+
+  if (toId) {
+    try {
+      await bot.forwardMessage(toId, fromId, msg.message_id);
+      console.log(`Сообщение от ${fromId} переслано`);
+    } catch (error) {
+      console.error('Ошибка пересылки:', error.message);
+    }
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Сервер запущен на порту ${PORT}`);
+  console.log(`🌐 Вебхук установлен: ${webhookUrl}`);
+});
+
